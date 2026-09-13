@@ -1,0 +1,42 @@
+# --- Python ---------------------------------------------------------------
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+
+# --- virtualenvs ----------------------------------------------------------
+.venv/
+venv/
+env/
+
+# --- generated data -------------------------------------------------------
+# Datasets, embedding caches and checkpoints are large, binary, and
+# machine-specific. Four people committing these means merge conflicts on
+# runs.json every pull and a repo that clones in ten minutes.
+# The directories are kept (via .gitkeep) so core/paths.py has somewhere to
+# write on a fresh checkout; the contents are not.
+storage/datasets/*
+storage/artifacts/*
+storage/checkpoints/*
+storage/datasets.json
+storage/runs.json
+storage/*.corrupt-*.json
+# Machine-specific and regenerable: python -m scripts.calibrate
+storage/calibration.json
+!storage/**/.gitkeep
+
+# --- node -----------------------------------------------------------------
+node_modules/
+frontend/dist/
+frontend/.vite/
+
+# --- editors / OS ---------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+*.swp
+
+# --- keep ------------------------------------------------------------------
+# requirements.lock.txt IS committed on purpose — it is how four laptops end
+# up with the same transitive dependency versions.
