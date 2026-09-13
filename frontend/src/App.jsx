@@ -3,6 +3,8 @@ import { useEffect, useState } from "react";
 import { getHealth } from "./api";
 import StepBar from "./components/StepBar";
 import TopBar from "./components/TopBar";
+import Benchmark from "./pages/Benchmark";
+import Configure from "./pages/Configure";
 import Upload from "./pages/Upload";
 
 /**
@@ -96,17 +98,26 @@ export default function App() {
         )}
 
         {step === "configure" && (
-          <Placeholder
-            name="Configure"
-            note="Preprocessing ops, backbone, encoding, feature count, models, cost estimate and the validation banner."
+          <Configure
+            dataset={dataset}
             onBack={() => setStep("upload")}
+            onRun={(id) => {
+              setJobId(id);
+              setRunId(null);
+              setStep("benchmark");
+            }}
           />
         )}
 
         {step === "benchmark" && (
-          <Placeholder
-            name="Benchmark"
-            note="Polls GET /jobs/{id} every 800ms, then renders the metrics table, confusion matrices and telemetry."
+          <Benchmark
+            jobId={jobId}
+            runId={runId}
+            onRunFinished={setRunId}
+            onDiagnose={(rid) => {
+              setRunId(rid);
+              setStep("diagnose");
+            }}
             onBack={() => setStep("configure")}
           />
         )}
