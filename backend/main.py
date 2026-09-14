@@ -97,6 +97,21 @@ def _unhandled(_: Request, exc: Exception) -> JSONResponse:
 # W4 accessors — the model layer, if it exists yet
 # ---------------------------------------------------------------------------
 
+W4_OPTIONAL = {
+    # Nice-to-have symbols. Absent ones degrade a feature rather than a route:
+    # no circuit diagram is a worse screen, not a broken one.
+    "encodings_shape": ("encodings", "circuit_shape"),
+}
+
+
+def _w4_optional(key: str) -> Any:
+    module, symbol = W4_OPTIONAL[key]
+    try:
+        return getattr(importlib.import_module(f"backend.core.{module}"), symbol)
+    except Exception:
+        return None
+
+
 W4 = {
     # These three are the registries' own catalog() accessors, not the raw
     # dicts. W4 sorts models classical-first so the picker's two columns come
@@ -225,8 +240,21 @@ def get_backbones() -> list[dict[str, Any]]:
 
 
 @app.get("/encodings", response_model=list[EncodingOut])
-def get_encodings() -> list[dict[str, Any]]:
-    return _w4("encodings")()
+def get_encodings(n_features: int | None = None) -> list[dict[str, Any]]:
+    """Without n_features this is the plain catalog. With it, each entry also
+    carries the real decomposed circuit at that width — qubits, depth, gate
+    count and the op list — so the Configure screen can draw the circuit the
+    user is about to run rather than a generic picture of one."""
+    entries = _w4("encodings")()
+    if n_features is None:
+        return entries
+    shape = _w4_optional("encodings_shape")
+    if shape is None:
+        return entries
+    for e in entries:
+        if n_features <= e["max_features"]:
+            e.update(shape(e["name"], n_features))
+    return entries
 
 
 @app.get("/models/catalog", response_model=list[ModelCatalogOut])

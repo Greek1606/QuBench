@@ -155,6 +155,7 @@ class TelemetryOut(BaseModel):
     circuit_depth: int | None = None
     two_qubit_gates: int | None = None
     state_memory_mb: float | None = None
+    bandwidth: float | None = None
 
 
 class ModelResultOut(BaseModel):
@@ -234,11 +235,17 @@ class EstimateOut(BaseModel):
     est_seconds: float
 
 
+class BlochAngleOut(BaseModel):
+    theta: float
+    phi: float
+
+
 class PredictionOut(BaseModel):
     """POST /predict/{run_id}/{model}"""
     label: str
     confidences: dict[str, float]
     latency_ms: float
+    bloch_angles: list[BlochAngleOut] | None = None
 
 
 # ===========================================================================
@@ -268,12 +275,25 @@ class BackboneOut(BaseModel):
     input_size: int
 
 
+class CircuitOpOut(BaseModel):
+    name: str
+    wires: list[int]
+
+
 class EncodingOut(BaseModel):
     name: str
     label: str
     max_features: int
     qubit_formula: str
     description: str = ""
+    # Present only when GET /encodings is called with ?n_features=N. The op
+    # list is the REAL decomposed circuit, so the frontend can draw any
+    # encoding without knowing its name — including ones added in Phase 2.
+    qubits: int | None = None
+    depth: int | None = None
+    two_qubit_gates: int | None = None
+    ops: list[CircuitOpOut] | None = None
+    ops_truncated: bool | None = None
 
 
 class ModelCatalogOut(BaseModel):

@@ -290,6 +290,12 @@ class Telemetry:
     circuit_depth: int | None = None
     two_qubit_gates: int | None = None
     state_memory_mb: float | None = None
+    # The kernel bandwidth a quantum model actually used. Nullable like the
+    # rest: classical models have no such thing. Worth a column of its own
+    # because it is the single largest effect we have measured — the same zz
+    # kernel scores 0.774 at bandwidth 1.0 and 0.903 cross-validated, and a
+    # results table that hides it invites "did you just get lucky?".
+    bandwidth: float | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -445,6 +451,10 @@ class Prediction:
     label: str
     confidences: dict[str, float]        # class_name -> probability, sums to 1
     latency_ms: float
+    # Where THIS patient's features land on each qubit, after the encoding's
+    # first data layer and the model's tuned bandwidth. None for classical
+    # models and for encodings with no per-qubit reading.
+    bloch_angles: list[dict[str, float]] | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return asdict(self)
@@ -584,6 +594,11 @@ class EncodingSpec:
     make_scaler: Callable[[], Any]       # () -> fresh sklearn transformer
     template: Callable[..., None]        # (x, wires) -> applies PennyLane ops
     two_qubit_gates_for: Callable[[int], int] | None = None
+    # (x, bandwidth) -> [{"theta","phi"}] for one patient, or None when the
+    # encoding has no per-qubit rotation reading. Amplitude returns None: its
+    # qubits hold a joint superposition, so drawing eight independent arrows
+    # would be a picture of something that is not happening.
+    bloch_for: Callable[..., list[dict] | None] | None = None
     description: str = ""
 
     def hilbert_dim(self, n_features: int) -> int:
@@ -729,6 +744,7 @@ class BaseModel(ABC):
             "circuit_depth": None,
             "two_qubit_gates": None,
             "state_memory_mb": None,
+            "bandwidth": None,
         }
 
     def telemetry(self) -> Telemetry:
@@ -815,6 +831,7 @@ if __name__ == "__main__":
     assert set(m.telemetry().to_dict()) == {
         "fit_seconds", "predict_seconds", "backend", "n_params", "n_qubits",
         "encoding", "circuit_depth", "two_qubit_gates", "state_memory_mb",
+        "bandwidth",
     }
 
     # n_classes mismatch must fail loudly

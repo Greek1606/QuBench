@@ -133,12 +133,14 @@ def print_results(rows: list[dict], class_names: list[str], wall: float) -> None
     quantum = [r for r in results if r.kind == "quantum" and r.ok]
     if quantum:
         print(f"\n{'QUANTUM TELEMETRY':<24s} {'qubits':>7s} {'encoding':>12s} "
-              f"{'depth':>7s} {'2q gates':>9s} {'state MB':>9s} {'params':>8s}")
+              f"{'depth':>7s} {'2q gates':>9s} {'bandwidth':>10s} "
+              f"{'state MB':>9s} {'params':>8s}")
         print("-" * 92)
         for r in quantum:
             t = r.telemetry
+            bw = "-" if t.bandwidth is None else f"{t.bandwidth:.3g}"
             print(f"{r.label[:24]:24s} {t.n_qubits:7d} {str(t.encoding):>12s} "
-                  f"{t.circuit_depth:7d} {t.two_qubit_gates:9d} "
+                  f"{t.circuit_depth:7d} {t.two_qubit_gates:9d} {bw:>10s} "
                   f"{t.state_memory_mb:9.2f} {str(t.n_params):>8s}")
 
     ok = [r for r in results if r.ok]

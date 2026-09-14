@@ -346,10 +346,24 @@ def predict_single(
     proba = bundle.estimator.predict_proba(X)[0]
 
     order = int(np.argmax(proba))
+
+    # Where this patient's features physically land on each qubit. Uses the
+    # model's OWN tuned bandwidth, not a default — the rotation a judge sees
+    # has to be the rotation that actually ran.
+    try:
+        from .encodings import bloch_angles
+        angles = bloch_angles(
+            bundle.encoding, X[0],
+            float(getattr(bundle.estimator, "bandwidth", 1.0) or 1.0),
+        )
+    except Exception:
+        angles = None
+
     return {
         "label": bundle.class_names[order],
         "confidences": {
             name: float(proba[i]) for i, name in enumerate(bundle.class_names)
         },
         "latency_ms": round((time.perf_counter() - t0) * 1000, 2),
+        "bloch_angles": angles,
     }

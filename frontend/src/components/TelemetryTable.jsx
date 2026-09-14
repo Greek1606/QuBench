@@ -9,6 +9,10 @@
 const COLS = [
   ["n_qubits", "Qubits", (v) => v],
   ["encoding", "Encoding", (v) => v],
+  // The bandwidth sits next to the encoding on purpose: the two together are
+  // the feature map, and a fidelity kernel at the wrong bandwidth scores near
+  // chance for reasons that have nothing to do with the encoding.
+  ["bandwidth", "Bandwidth", (v) => (v === 1 ? "1.0" : String(v))],
   ["circuit_depth", "Depth", (v) => v],
   ["two_qubit_gates", "2-qubit gates", (v) => v],
   ["state_memory_mb", "State", (v) => `${v.toFixed(2)} MB`],
@@ -67,6 +71,7 @@ export default function TelemetryTable({ results }) {
       </table>
       <p className="mt-3 text-[11px] text-muted">
         Depth and gate counts are read from the circuit that actually ran.
+        Bandwidth is the scale the kernel was cross-validated to, not a default.
         Simulation is exact — no shot noise, no hardware queue.
       </p>
     </div>

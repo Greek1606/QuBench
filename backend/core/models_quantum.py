@@ -202,6 +202,10 @@ class _QuantumModel(BaseModel):
             "state_memory_mb": round(
                 self.encoding.state_memory_mb(self.n_features), 4
             ),
+            # Reported by every quantum model, not just QSVC: a VQC inherits
+            # whatever bandwidth it was given, and that number explains a
+            # score near chance more often than the ansatz does.
+            "bandwidth": float(self.bandwidth),
         }
 
 

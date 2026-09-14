@@ -5,6 +5,7 @@ import {
   defaultParams,
   estimateRun,
   getCatalogs,
+  getEncodings,
   opsFromState,
   previewPreprocess,
   startRun,
@@ -17,6 +18,7 @@ import ModelPicker from "../components/ModelPicker";
 import OpList from "../components/OpList";
 import PresetSelect from "../components/PresetSelect";
 import PreviewStrip from "../components/PreviewStrip";
+import QuantumCircuit from "../components/QuantumCircuit";
 import Spinner from "../components/Spinner";
 import ValidationBanner from "../components/ValidationBanner";
 
@@ -60,6 +62,7 @@ export default function Configure({ dataset, onRun, onBack }) {
   const [estimateOff, setEstimateOff] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState(null);
+  const [circuit, setCircuit] = useState(null);
 
   // ---- load the catalogs, then seed every control from them ---------------
   useEffect(() => {
@@ -188,6 +191,25 @@ export default function Configure({ dataset, onRun, onBack }) {
     return () => clearTimeout(id);
   }, [opsKey, dataset, catalogs]);
 
+  // ---- the circuit for the current encoding + feature count ---------------
+  // Separate from validate/estimate: it changes only with these two inputs, and
+  // re-deriving a circuit on every op toggle would be wasted work.
+  useEffect(() => {
+    if (!encoding || !nFeatures) return;
+    let alive = true;
+    const id = setTimeout(() => {
+      getEncodings(nFeatures)
+        .then((list) => {
+          if (alive) setCircuit(list.find((e) => e.name === encoding) ?? null);
+        })
+        .catch(() => alive && setCircuit(null));
+    }, DEBOUNCE_MS);
+    return () => {
+      alive = false;
+      clearTimeout(id);
+    };
+  }, [encoding, nFeatures]);
+
   // ---- keep the feature count inside the encoding's ceiling ---------------
   useEffect(() => {
     const enc = catalogs?.encodings.find((e) => e.name === encoding);
@@ -315,8 +337,22 @@ export default function Configure({ dataset, onRun, onBack }) {
           </Card>
         </div>
 
-        {/* ---- column 3: models, cost, validation ---- */}
+        {/* ---- column 3: circuit, models, cost, validation ---- */}
         <div className="space-y-6">
+          <Card
+            title="The circuit that will run"
+            sub="Redrawn whenever the encoding or feature count changes."
+          >
+            <QuantumCircuit
+              qubits={circuit?.qubits}
+              ops={circuit?.ops}
+              depth={circuit?.depth}
+              twoQubitGates={circuit?.two_qubit_gates}
+              truncated={circuit?.ops_truncated}
+              encodingLabel={circuit?.label ?? encoding}
+            />
+          </Card>
+
           <Card
             title="Pick what to race"
             sub="Every model sees exactly the same features."

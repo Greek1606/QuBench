@@ -86,7 +86,8 @@ from sklearn.preprocessing import MinMaxScaler
 
 from .contracts import EncodingSpec
 
-__all__ = ["ENCODINGS", "L2Normalizer", "get_encoding", "catalog"]
+__all__ = [
+    "circuit_shape", "bloch_angles","ENCODINGS", "L2Normalizer", "get_encoding", "catalog"]
 
 
 # ---------------------------------------------------------------------------
@@ -240,6 +241,19 @@ def amplitude_template(x, wires) -> None:
 # THE REGISTRY
 # ---------------------------------------------------------------------------
 
+def _bloch_ry(x, bandwidth: float = 1.0) -> list[dict]:
+    """RY(theta) from |0>: the arrow tilts in the XZ plane by theta itself."""
+    return [{"theta": float(v) * float(bandwidth), "phi": 0.0} for v in x]
+
+
+def _bloch_equator(x, bandwidth: float = 1.0) -> list[dict]:
+    """H then RZ(phi): H puts every qubit on the equator, so the data shows up
+    as the azimuth, not the tilt. Drawing these as RY-style tilts would be the
+    wrong picture of the same circuit."""
+    return [{"theta": float(np.pi / 2), "phi": float(v) * float(bandwidth)}
+            for v in x]
+
+
 ENCODINGS: dict[str, EncodingSpec] = {
     "angle_y": EncodingSpec(
         name="angle_y",
@@ -250,6 +264,7 @@ ENCODINGS: dict[str, EncodingSpec] = {
         make_scaler=_minmax_0_pi,
         template=angle_y_template,
         two_qubit_gates_for=_tq_zero,
+        bloch_for=_bloch_ry,
         description=(
             "One rotation per feature, no entanglement. Cheapest and the "
             "honest classical-simulable baseline: the kernel factorises into a "
@@ -265,6 +280,7 @@ ENCODINGS: dict[str, EncodingSpec] = {
         make_scaler=_minmax_0_pi,
         template=angle_x2_template,
         two_qubit_gates_for=_tq_ring,
+        bloch_for=_bloch_ry,
         description=(
             "Encode, entangle with a CNOT ring, then re-encode. The ring sits "
             "between two data layers so it genuinely changes the kernel, unlike "
@@ -280,6 +296,7 @@ ENCODINGS: dict[str, EncodingSpec] = {
         make_scaler=_minmax_0_2pi,
         template=zz_template,
         two_qubit_gates_for=_tq_zz_full,
+        bloch_for=_bloch_equator,
         description=(
             "Second-order Pauli-Z map with data-dependent two-qubit rotations. "
             "The pairwise angle depends on two features at once, which no "
@@ -319,6 +336,74 @@ def get_encoding(name: str) -> EncodingSpec:
         raise KeyError(
             f"unknown encoding {name!r}; available: {sorted(ENCODINGS)}"
         ) from None
+
+
+# ---------------------------------------------------------------------------
+# Bloch readings and circuit shape -- what the interface draws
+# ---------------------------------------------------------------------------
+# These describe the state after the encoding's FIRST data layer. That is the
+# moment worth showing: it is where the patient's numbers physically enter the
+# circuit. Everything after it is entanglement, which no single-qubit arrow can
+# honestly depict.
+
+def circuit_shape(encoding_name: str, n_features: int,
+                  max_ops: int = 72) -> dict:
+    """The real decomposed circuit, as data the frontend can draw.
+
+    Returns qubits, depth, two-qubit gate count, and an ordered op list of
+    {name, wires}. Read off PennyLane rather than described by hand, so a
+    Phase 2 encoding renders correctly the day it is added and a template edit
+    can never leave the drawing stale.
+
+    Long circuits are truncated: zz at 10 features is 200+ ops and a diagram
+    that wide is unreadable anyway. `ops_truncated` tells the caller to say so.
+    """
+    import pennylane as qml
+
+    spec = get_encoding(encoding_name)
+    q = spec.qubits_for(n_features)
+    x = np.zeros(2 ** q if encoding_name == "amplitude" else n_features)
+    if encoding_name == "amplitude":
+        x[0] = 1.0
+
+    def probe(xx):
+        spec.template(xx, wires=range(q))
+        return qml.state()
+
+    qnode = qml.QNode(probe, qml.device("default.qubit", wires=q))
+    try:
+        batch, _ = qml.workflow.construct_batch(qnode, level="device")(x)
+        ops = [
+            {"name": op.name, "wires": [int(w) for w in op.wires]}
+            for op in batch[0].operations
+        ]
+        res = qml.specs(qnode, level="device")(x).resources
+        depth = int(res.depth)
+        two_q = int(sum(c for size, c in res.gate_sizes.items() if size >= 2))
+    except Exception:
+        # A drawing must never be the thing that fails a request.
+        return {"qubits": q, "depth": None, "two_qubit_gates": None,
+                "ops": None, "ops_truncated": False}
+
+    return {
+        "qubits": q,
+        "depth": depth,
+        "two_qubit_gates": two_q,
+        "ops": ops[:max_ops],
+        "ops_truncated": len(ops) > max_ops,
+    }
+
+
+def bloch_angles(encoding_name: str, x, bandwidth: float = 1.0
+                 ) -> list[dict] | None:
+    """One patient's scaled features as per-qubit angles, or None."""
+    spec = get_encoding(encoding_name)
+    if spec.bloch_for is None:
+        return None
+    try:
+        return spec.bloch_for(x, bandwidth)
+    except Exception:
+        return None
 
 
 def catalog() -> list[dict]:

@@ -21,7 +21,37 @@ export default function DatasetList({
   loading,
   onSelect,
   selectedId,
+  error,
+  onRetry,
 }) {
+  // Order matters: an error must win over the empty state, or a backend that
+  // is down reads as a machine with no data.
+  if (error) {
+    return (
+      <div role="alert">
+        <p className="text-[12px] text-body">
+          <span className="font-semibold text-ink">
+            Could not list datasets.
+          </span>{" "}
+          {error}
+        </p>
+        <p className="mt-1 text-[11px] text-muted">
+          Datasets already ingested are still on disk — this is a connection
+          problem, not missing data.
+        </p>
+        {onRetry && (
+          <button
+            type="button"
+            onClick={onRetry}
+            className="mt-3 rounded-[7px] border border-rule px-3 py-1.5 text-[12px] text-body hover:bg-canvas"
+          >
+            Try again
+          </button>
+        )}
+      </div>
+    );
+  }
+
   if (loading) {
     return (
       <p className="flex items-center gap-2 text-[12px] text-muted">

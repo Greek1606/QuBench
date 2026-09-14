@@ -199,7 +199,7 @@ def model_result(name: str, kind: str, label: str, acc: float, seed: int,
 
 
 Q8 = {"n_qubits": 8, "encoding": "angle_y", "circuit_depth": 14,
-      "two_qubit_gates": 16, "state_memory_mb": 0.002}
+      "two_qubit_gates": 16, "state_memory_mb": 0.002, "bandwidth": 0.25}
 
 RESULTS = [
     model_result("svc", "classical", "SVC (RBF, tuned)", 0.8333, 1,
@@ -226,9 +226,20 @@ RUN = RunRecord(run_id=RUN_ID, dataset_id=DATASET_ID,
 # ---------------------------------------------------------------------------
 
 def _w4_encodings() -> tuple[list[dict], str]:
+    """Enriched with the real circuit at CONFIG.n_features, so MOCK mode can
+    draw the circuit diagram. Without this the fixture is a catalog with no
+    ops and the panel renders empty in mock — which would look like a bug in
+    the component rather than a gap in the fixture."""
     try:
-        from backend.core.encodings import catalog
-        return catalog(), "live registry"
+        from backend.core.encodings import catalog, circuit_shape
+        entries = catalog()
+        for e in entries:
+            if CONFIG.n_features <= e["max_features"]:
+                try:
+                    e.update(circuit_shape(e["name"], CONFIG.n_features))
+                except Exception:
+                    pass
+        return entries, "live registry"
     except Exception:
         return SPEC_ENCODINGS, "SPEC (W4 not written)"
 
@@ -389,6 +400,10 @@ def build() -> dict[str, tuple[object, object | None]]:
             confidences={"HB": 0.0214, "MI": 0.9139, "Normal": 0.0403,
                          "PMI": 0.0244},
             latency_ms=142.7,
+            # angle_y at 8 features: theta is the scaled feature times the
+            # tuned bandwidth, phi is zero. Real shape, illustrative numbers.
+            bloch_angles=[{"theta": t, "phi": 0.0} for t in
+                          (0.42, 1.86, 2.71, 0.95, 2.28, 1.13, 0.67, 2.94)],
         ).to_dict(), schemas.PredictionOut),
     }
 

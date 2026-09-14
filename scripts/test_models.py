@@ -86,6 +86,7 @@ def run_one(model_name: str, enc_name: str, n_classes: int) -> dict:
     assert set(tel.to_dict()) == {
         "fit_seconds", "predict_seconds", "backend", "n_params", "n_qubits",
         "encoding", "circuit_depth", "two_qubit_gates", "state_memory_mb",
+        "bandwidth",
     }
     if cls.kind == "quantum":
         assert tel.n_qubits == enc.qubits_for(n_features)

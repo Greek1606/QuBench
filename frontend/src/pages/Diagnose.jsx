@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { ApiError, getRun, listRuns, predict } from "../api";
+import BlochSpheres from "../components/BlochSpheres";
 import Card from "../components/Card";
 import Dropzone from "../components/Dropzone";
 import ModelSelect from "../components/ModelSelect";
@@ -210,6 +211,26 @@ export default function Diagnose({ runId, model: initialModel, onBack }) {
 
         <div className="space-y-6">
           <PredictionCard prediction={prediction} modelLabel={modelLabel} />
+
+          {/* Rendered for ANY prediction. Gating on `bloch_angles !== undefined`
+              hid the whole panel when the backend was older than the field or
+              the fixture was stale — which looks identical to "the component is
+              broken". Let BlochSpheres say which of the three cases it is. */}
+          {prediction && (
+            <Card
+              title="This patient, as qubits"
+              sub="Where their features land after the first encoding layer."
+            >
+              <BlochSpheres
+                angles={prediction.bloch_angles}
+                encodingLabel={run?.config?.encoding ?? ""}
+                bandwidth={
+                  run?.results.find((r) => r.model === model)?.telemetry
+                    ?.bandwidth
+                }
+              />
+            </Card>
+          )}
 
           <Card
             title="Which model answers"

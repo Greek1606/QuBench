@@ -128,9 +128,15 @@ export const getPresets = () =>
 export const getBackbones = () =>
   MOCK ? mock.get("backbones") : request("/backbones");
 
-/** `{ name, label, max_features, qubit_formula, description }[]` */
-export const getEncodings = () =>
-  MOCK ? mock.get("encodings") : request("/encodings");
+/** `{ name, label, max_features, qubit_formula, description }[]`.
+ *
+ *  Pass `nFeatures` and each entry also carries the REAL decomposed circuit at
+ *  that width — qubits, depth, two-qubit gate count and the op list — so the
+ *  circuit diagram draws what is about to run rather than a generic picture. */
+export const getEncodings = (nFeatures) =>
+  MOCK
+    ? mock.get("encodings")
+    : request(`/encodings${nFeatures ? `?n_features=${nFeatures}` : ""}`);
 
 /** `{ name, kind, label, param_schema }[]`, classical first then quantum. */
 export const getModelsCatalog = () =>

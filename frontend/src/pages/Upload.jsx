@@ -25,15 +25,24 @@ export default function Upload({ onContinue }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
   const [existing, setExisting] = useState(null);
+  const [listError, setListError] = useState(null);
   const [chosen, setChosen] = useState(null); // picked from the list instead
 
   const refresh = useCallback(async () => {
     try {
+      setListError(null);
       setExisting(await listDatasets());
     } catch (e) {
-      // A failure here is not worth blocking the screen: the dropzone still
-      // works, and the list is a convenience.
+      // Do NOT fall back to an empty array. An empty list and a failed request
+      // look identical on screen but mean opposite things — "this machine has
+      // no datasets" versus "I could not ask". Swallowing the error here sent
+      // someone hunting for a missing dataset that was on disk the whole time.
       setExisting([]);
+      setListError(
+        e instanceof ApiError
+          ? e.detail
+          : "Could not reach the backend to list datasets.",
+      );
     }
   }, []);
 
@@ -154,6 +163,8 @@ export default function Upload({ onContinue }) {
         <DatasetList
           datasets={existing}
           loading={existing === null}
+          error={listError}
+          onRetry={refresh}
           selectedId={chosen?.dataset_id ?? meta?.dataset_id}
           onSelect={(d) => {
             setChosen(d);
