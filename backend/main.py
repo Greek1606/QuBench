@@ -101,6 +101,7 @@ W4_OPTIONAL = {
     # Nice-to-have symbols. Absent ones degrade a feature rather than a route:
     # no circuit diagram is a worse screen, not a broken one.
     "encodings_shape": ("encodings", "circuit_shape"),
+    "encodings_bloch": ("encodings", "bloch_demo"),
 }
 
 
@@ -251,9 +252,12 @@ def get_encodings(n_features: int | None = None) -> list[dict[str, Any]]:
     shape = _w4_optional("encodings_shape")
     if shape is None:
         return entries
+    demo = _w4_optional("encodings_bloch")
     for e in entries:
         if n_features <= e["max_features"]:
             e.update(shape(e["name"], n_features))
+            if demo is not None:
+                e["bloch_demo"] = demo(e["name"], n_features)
     return entries
 
 

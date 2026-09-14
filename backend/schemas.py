@@ -235,11 +235,6 @@ class EstimateOut(BaseModel):
     est_seconds: float
 
 
-class BlochAngleOut(BaseModel):
-    theta: float
-    phi: float
-
-
 class PredictionOut(BaseModel):
     """POST /predict/{run_id}/{model}"""
     label: str
@@ -275,6 +270,11 @@ class BackboneOut(BaseModel):
     input_size: int
 
 
+class BlochAngleOut(BaseModel):
+    theta: float
+    phi: float
+
+
 class CircuitOpOut(BaseModel):
     name: str
     wires: list[int]
@@ -294,6 +294,9 @@ class EncodingOut(BaseModel):
     two_qubit_gates: int | None = None
     ops: list[CircuitOpOut] | None = None
     ops_truncated: bool | None = None
+    # One feature swept across its scaled range — the encoding's geometry,
+    # shown before any patient exists.
+    bloch_demo: list[BlochAngleOut] | None = None
 
 
 class ModelCatalogOut(BaseModel):

@@ -87,7 +87,7 @@ from sklearn.preprocessing import MinMaxScaler
 from .contracts import EncodingSpec
 
 __all__ = [
-    "circuit_shape", "bloch_angles","ENCODINGS", "L2Normalizer", "get_encoding", "catalog"]
+    "circuit_shape", "bloch_angles", "bloch_demo","ENCODINGS", "L2Normalizer", "get_encoding", "catalog"]
 
 
 # ---------------------------------------------------------------------------
@@ -392,6 +392,31 @@ def circuit_shape(encoding_name: str, n_features: int,
         "ops": ops[:max_ops],
         "ops_truncated": len(ops) > max_ops,
     }
+
+
+def bloch_demo(encoding_name: str, n_features: int) -> list[dict] | None:
+    """A fan of rotations: one feature swept from its minimum to its maximum.
+
+    The Configure screen has no patient yet, so it cannot honestly show one.
+    What it CAN show is the encoding's geometry — what a feature value
+    physically becomes. Each sphere here is the same single feature at a
+    different point in its scaled range, not eight different measurements.
+
+    The range is read off the encoding's own scaler rather than hardcoded, so
+    angle_y sweeps 0..pi and zz sweeps 0..2pi without this function knowing
+    which is which.
+    """
+    spec = get_encoding(encoding_name)
+    if spec.bloch_for is None:
+        return None
+    n = max(int(spec.qubits_for(n_features)), 1)
+    try:
+        probe = np.linspace(0.0, 1.0, 16).reshape(-1, 1).repeat(n, axis=1)
+        scaled = np.asarray(spec.make_scaler().fit(probe).transform(probe))
+        lo, hi = float(scaled[:, 0].min()), float(scaled[:, 0].max())
+        return spec.bloch_for(np.linspace(lo, hi, n), 1.0)
+    except Exception:
+        return None
 
 
 def bloch_angles(encoding_name: str, x, bandwidth: float = 1.0

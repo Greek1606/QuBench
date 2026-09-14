@@ -231,12 +231,13 @@ def _w4_encodings() -> tuple[list[dict], str]:
     ops and the panel renders empty in mock — which would look like a bug in
     the component rather than a gap in the fixture."""
     try:
-        from backend.core.encodings import catalog, circuit_shape
+        from backend.core.encodings import bloch_demo, catalog, circuit_shape
         entries = catalog()
         for e in entries:
             if CONFIG.n_features <= e["max_features"]:
                 try:
                     e.update(circuit_shape(e["name"], CONFIG.n_features))
+                    e["bloch_demo"] = bloch_demo(e["name"], CONFIG.n_features)
                 except Exception:
                     pass
         return entries, "live registry"

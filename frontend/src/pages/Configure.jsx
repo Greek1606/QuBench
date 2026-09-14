@@ -11,6 +11,7 @@ import {
   startRun,
   validateRun,
 } from "../api";
+import BlochSpheres from "../components/BlochSpheres";
 import Card from "../components/Card";
 import CostStrip from "../components/CostStrip";
 import EncodingPanel from "../components/EncodingPanel";
@@ -333,6 +334,30 @@ export default function Configure({ dataset, onRun, onBack }) {
               onBackbone={setBackbone}
               onEncoding={setEncoding}
               onFeatures={setNFeatures}
+            />
+          </Card>
+
+          {/* Column 2 is the encoding column and was the short one — this
+              lands under the panel it explains and evens the three columns
+              out rather than stretching any of them. */}
+          <Card
+            title="What the encoding does"
+            sub="One feature, swept from its smallest value to its largest."
+          >
+            <BlochSpheres
+              angles={circuit?.bloch_demo}
+              encodingLabel={circuit?.name ?? encoding}
+              columns={Math.min(circuit?.bloch_demo?.length ?? 4, 6)}
+              missingHint={false}
+              caption={
+                <>
+                  Each sphere is the same feature at a different point in its
+                  range under{" "}
+                  <span className="font-mono">{circuit?.name ?? encoding}</span>
+                  . No patient is involved yet — this is the geometry the data
+                  will land in.
+                </>
+              }
             />
           </Card>
         </div>

@@ -84,17 +84,23 @@ function Sphere({ theta, phi, index, r = 26 }) {
   );
 }
 
-export default function BlochSpheres({ angles, encodingLabel, bandwidth }) {
+export default function BlochSpheres({
+  angles,
+  encodingLabel,
+  bandwidth,
+  caption,
+  columns = 4,
+  missingHint = true,
+}) {
   // Three states, deliberately distinguished. `null` is a real answer from the
   // backend; `undefined` means it never sent the field, which is a setup
   // problem and should say so rather than look like an encoding limitation.
   if (angles === undefined) {
     return (
       <p className="text-[11.5px] leading-snug text-caution">
-        This prediction arrived without qubit angles. The backend may predate
-        the field — restart it, and run{" "}
-        <span className="font-mono">python scripts/gen_fixtures.py</span> if you
-        are in mock mode.
+        {missingHint
+          ? "No qubit angles arrived. The backend may predate the field — restart it, and re-run scripts/gen_fixtures.py if you are in mock mode."
+          : "No qubit angles available for this encoding yet."}
       </p>
     );
   }
@@ -111,19 +117,26 @@ export default function BlochSpheres({ angles, encodingLabel, bandwidth }) {
 
   return (
     <div>
-      <ul className="grid grid-cols-4 gap-x-2 gap-y-3">
+      <ul
+        className="grid gap-x-2 gap-y-3"
+        style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
+      >
         {angles.map((a, i) => (
           <Sphere key={i} theta={a.theta} phi={a.phi} index={i} />
         ))}
       </ul>
-      <p className="mt-3 text-[11px] text-body">
-        {angles.length} feature{angles.length === 1 ? "" : "s"} became{" "}
-        {angles.length} rotation{angles.length === 1 ? "" : "s"} under{" "}
-        <span className="font-mono">{encodingLabel}</span>
-        {bandwidth != null && bandwidth !== 1 && (
-          <>, scaled by the tuned bandwidth {bandwidth}</>
+      <p className="mt-3 text-[11px] leading-snug text-body">
+        {caption ?? (
+          <>
+            {angles.length} feature{angles.length === 1 ? "" : "s"} became{" "}
+            {angles.length} rotation{angles.length === 1 ? "" : "s"} under{" "}
+            <span className="font-mono">{encodingLabel}</span>
+            {bandwidth != null && bandwidth !== 1 && (
+              <>, scaled by the tuned bandwidth {bandwidth}</>
+            )}
+            .
+          </>
         )}
-        .
       </p>
     </div>
   );
