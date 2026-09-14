@@ -5,6 +5,8 @@ import StepBar from "./components/StepBar";
 import TopBar from "./components/TopBar";
 import Benchmark from "./pages/Benchmark";
 import Configure from "./pages/Configure";
+import Diagnose from "./pages/Diagnose";
+import Leaderboard from "./pages/Leaderboard";
 import Upload from "./pages/Upload";
 
 /**
@@ -123,49 +125,18 @@ export default function App() {
         )}
 
         {step === "diagnose" && (
-          <Placeholder
-            name="Diagnose"
-            note="One image against one trained model, with per-class confidence."
-            onBack={() => setStep("benchmark")}
-          />
+          <Diagnose runId={runId} onBack={() => setStep("benchmark")} />
         )}
 
         {step === "leaderboard" && (
-          <Placeholder
-            name="Leaderboard"
-            note="Best classical against best quantum, per dataset, across every run."
-            onBack={() => setStep("upload")}
+          <Leaderboard
+            onOpenRun={(rid) => {
+              setRunId(rid);
+              setStep("benchmark");
+            }}
           />
         )}
       </main>
-    </div>
-  );
-}
-
-/**
- * Stands in for a screen that has not been built. Deliberately plain: it should
- * never be mistaken for a finished page, and it should never appear in a demo.
- *
- * To replace one, import the real page and swap the element. Nothing else in
- * this file changes.
- */
-function Placeholder({ name, note, onBack }) {
-  return (
-    <div className="mx-auto max-w-[1440px] px-9 py-7">
-      <div className="rounded-[10px] border border-dashed border-rule bg-white px-8 py-14 text-center">
-        <p className="text-[25px] font-semibold text-ink">{name}</p>
-        <p className="mx-auto mt-2 max-w-[46ch] text-[13px] text-body">
-          {note}
-        </p>
-        <p className="mt-4 font-mono text-[11.5px] text-muted">not built yet</p>
-        <button
-          type="button"
-          onClick={onBack}
-          className="mt-6 rounded-[7px] border border-rule px-4 py-2 text-[13px] text-body hover:bg-canvas"
-        >
-          Go back
-        </button>
-      </div>
     </div>
   );
 }
