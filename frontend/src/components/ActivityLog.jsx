@@ -20,8 +20,13 @@ export default function ActivityLog({ entries }) {
     );
   }
 
+  // The card this list sits in is its column's flex filler (Benchmark's
+  // running view), so on desktop the list fills whatever height is left and
+  // scrolls only once full — a hard max-height would fight that fill. Below
+  // lg the columns stack and there is no leftover height, so the old cap
+  // stays to keep a long transcript from running the page long.
   return (
-    <ol className="space-y-1.5 overflow-scroll max-h-[200px] pr-2 scroll-smooth">
+    <ol className="min-h-0 max-h-[200px] flex-1 space-y-1.5 overflow-scroll pr-2 scroll-smooth lg:max-h-[200px]">
       {entries.map((e, i) => {
         const last = i === entries.length - 1;
         return (

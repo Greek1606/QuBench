@@ -59,6 +59,21 @@ const CARD_CENTER =
   "[&>div:last-child]:items-center [&>div:last-child]:justify-center";
 
 /**
+ * Layout for the Activity card in the running view.
+ *
+ * It is its column's filler: the card stretches to the column bottom and the
+ * log inside flexes to absorb whatever height the Bloch card above it did not
+ * need — that is what turns the old dead space under Live telemetry into an
+ * always-full page. [&>div]:flex lets the card's inner content div become the
+ * flex row this needs (Card.jsx wraps children in a plain div), and
+ * [&_ol]:min-h-0 lets the log shrink to scroll instead of forcing the card
+ * taller. Below lg the columns stack and none of this has any effect.
+ */
+const ACTIVITY_FILL =
+  "flex h-full flex-col [&>div]:flex [&>div]:flex-1 [&>div]:min-h-0 " +
+  "[&_ol]:min-h-0 [&_ol]:flex-1";
+
+/**
  * Screen 3 of 5. Two states in one page: running, then results.
  *
  * The transition is automatic — pollJob resolves on done, the run is fetched,
@@ -225,60 +240,70 @@ export default function Benchmark({
             run continues.
           </p>
         </header>
-        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,760px)_minmax(0,1fr)]">
-          <div>
-            {job ? (
-              <JobProgress job={job} elapsed={elapsed} estimate={estimate} />
-            ) : (
-              <p className="flex items-center gap-2 text-[13px] text-muted">
-                <Spinner size={15} /> Waiting for the first update
-              </p>
-            )}
+        {/* One grid, bottom-aligned columns, so nothing on this page is
+            stranded above dead space. Each column is a flex stack whose last
+            card absorbs the leftover height. */}
+        <div className="mt-6 grid items-stretch gap-6 lg:grid-cols-[minmax(0,760px)_minmax(0,1fr)]">
+          <div className="flex flex-col gap-6">
+            <div className="shrink-0">
+              {job ? (
+                <JobProgress job={job} elapsed={elapsed} estimate={estimate} />
+              ) : (
+                <p className="flex items-center gap-2 text-[13px] text-muted">
+                  <Spinner size={15} /> Waiting for the first update
+                </p>
+              )}
+            </div>
+
+            <Card
+              className="flex-1 [&>div]:flex [&>div]:flex-1 [&>div]:items-center"
+              title="Live circuit telemetry"
+              sub="The circuit these models are running on."
+            >
+              <LiveTelemetry circuit={circuit} estimate={estimate} />
+            </Card>
           </div>
 
-          {/* Same panel as Configure, from the same encoding payload. While
-              the job runs it is the only thing on this page that shows what
-              the data looks like to the simulator. */}
-          {running && (
+          <div className="flex flex-col gap-6">
+            {/* Same panel as Configure, from the same encoding payload. While
+                the job runs it is the only thing on this page that shows what
+                the data looks like to the simulator. */}
+            {running && (
+              <Card
+                className={`${CARD_CENTER} shrink-0`}
+                title="What the encoding does"
+                sub="One feature, swept from its smallest value to its largest."
+              >
+                <div className={`mx-auto w-full max-w-[420px] ${FAN}`}>
+                  <BlochSpheres
+                    angles={circuit?.bloch_demo}
+                    encodingLabel={circuit?.name ?? runCfg?.encoding ?? ""}
+                    columns={fanColumns(circuit?.bloch_demo?.length ?? 0)}
+                    missingHint={false}
+                    caption={
+                      <>
+                        Each sphere is the same feature at a different point in
+                        its range under{" "}
+                        <span className="font-mono">
+                          {circuit?.name ?? runCfg?.encoding ?? ""}
+                        </span>
+                        . No patient is involved yet — this is the geometry the
+                        data will land in.
+                      </>
+                    }
+                  />
+                </div>
+              </Card>
+            )}
+
             <Card
-              className={CARD_CENTER}
-              title="What the encoding does"
-              sub="One feature, swept from its smallest value to its largest."
+              className={ACTIVITY_FILL}
+              title="Activity"
+              sub="Sampled from the job every 800ms."
             >
-              <div className={`mx-auto w-full max-w-[420px] ${FAN}`}>
-                <BlochSpheres
-                  angles={circuit?.bloch_demo}
-                  encodingLabel={circuit?.name ?? runCfg?.encoding ?? ""}
-                  columns={fanColumns(circuit?.bloch_demo?.length ?? 0)}
-                  missingHint={false}
-                  caption={
-                    <>
-                      Each sphere is the same feature at a different point in
-                      its range under{" "}
-                      <span className="font-mono">
-                        {circuit?.name ?? runCfg?.encoding ?? ""}
-                      </span>
-                      . No patient is involved yet — this is the geometry the
-                      data will land in.
-                    </>
-                  }
-                />
-              </div>
+              <ActivityLog entries={activity} />
             </Card>
-          )}
-        </div>
-
-        <div className="mt-6 grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(0,1fr)]">
-          <Card title="Activity" sub="Sampled from the job every 800ms.">
-            <ActivityLog entries={activity} />
-          </Card>
-
-          <Card
-            title="Live circuit telemetry"
-            sub="The circuit these models are running on."
-          >
-            <LiveTelemetry circuit={circuit} estimate={estimate} />
-          </Card>
+          </div>
         </div>
       </div>
     );
@@ -431,20 +456,6 @@ export default function Benchmark({
             />
           </Card>
         </div>
-      )}
-
-      {showcase?.kind === "quantum" && (
-        <Card
-          className="mt-6"
-          title="Live circuit telemetry"
-          sub="What the simulator actually did, for the winning quantum model."
-        >
-          <LiveTelemetry
-            circuit={circuit}
-            estimate={estimate}
-            telemetry={showcase.telemetry}
-          />
-        </Card>
       )}
 
       <Card

@@ -37,6 +37,11 @@ frontend/.vite/
 Thumbs.db
 *.swp
 
+# --- local docs ------------------------------------------------------------
+# Session-by-session change notes. Kept out of the repo on purpose: the git
+# history already says what changed, and this file is conversation-local.
+CHANGES_MADE.md
+
 # --- keep ------------------------------------------------------------------
 # requirements.lock.txt IS committed on purpose — it is how four laptops end
 # up with the same transitive dependency versions.
