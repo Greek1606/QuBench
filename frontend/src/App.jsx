@@ -42,6 +42,11 @@ export default function App() {
   const [dataset, setDataset] = useState(null);
   const [jobId, setJobId] = useState(null);
   const [runId, setRunId] = useState(null);
+  // The config and cost estimate that produced the current job. Benchmark
+  // needs them to describe the circuit while it is still running — afterwards
+  // the run record carries everything.
+  const [runConfig, setRunConfig] = useState(null);
+  const [runEstimate, setRunEstimate] = useState(null);
   const [wired, setWired] = useState(null);
 
   // One health check at start. It tells the top bar which endpoints are live,
@@ -103,8 +108,10 @@ export default function App() {
           <Configure
             dataset={dataset}
             onBack={() => setStep("upload")}
-            onRun={(id) => {
+            onRun={(id, cfg, est) => {
               setJobId(id);
+              setRunConfig(cfg);
+              setRunEstimate(est);
               setRunId(null);
               setStep("benchmark");
             }}
@@ -115,6 +122,8 @@ export default function App() {
           <Benchmark
             jobId={jobId}
             runId={runId}
+            config={runConfig}
+            estimate={runEstimate}
             onRunFinished={setRunId}
             onDiagnose={(rid) => {
               setRunId(rid);
@@ -131,6 +140,11 @@ export default function App() {
         {step === "leaderboard" && (
           <Leaderboard
             onOpenRun={(rid) => {
+              // Drop the draft config and its estimate: they belong to a
+              // different run, and showing one run's simulation count beside
+              // another's results is worse than showing none.
+              setRunConfig(null);
+              setRunEstimate(null);
               setRunId(rid);
               setStep("benchmark");
             }}

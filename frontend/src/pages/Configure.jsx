@@ -375,6 +375,7 @@ export default function Configure({ dataset, onRun, onBack }) {
               twoQubitGates={circuit?.two_qubit_gates}
               truncated={circuit?.ops_truncated}
               encodingLabel={circuit?.label ?? encoding}
+              zoomable
             />
           </Card>
 

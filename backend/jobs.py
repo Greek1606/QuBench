@@ -53,7 +53,7 @@ MAX_JOBS = 100          # ring buffer; finished jobs evict oldest-first
 
 # One run at a time. ResNet18 inference and a statevector simulator are both
 # CPU-bound and single-machine; two concurrent runs do not finish in half the
-# time, they finish in rather more than the sum while fighting over 4 cores.
+# time, the  y finish in rather more than the sum while fighting over 4 cores.
 # A second submission sits in `queued` with an honest message instead.
 _SLOT = threading.Semaphore(1)
 
